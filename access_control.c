@@ -6,11 +6,6 @@
 char blocked_domains[MAX_BLOCKED_DOMAINS][MAX_DOMAIN_LENGTH];
 
 int blocked_domain_count = 0;
-
-
-/*
- * Load blocked domains from a file.
- */
 int load_blocked_domains(const char *filename)
 {
     FILE *file;
@@ -32,18 +27,11 @@ int load_blocked_domains(const char *filename)
         ) != NULL
     )
     {
-        /*
-         * Remove newline.
-         */
         blocked_domains[blocked_domain_count]
             [strcspn(
                 blocked_domains[blocked_domain_count],
                 "\r\n"
             )] = '\0';
-
-        /*
-         * Ignore empty lines and comments.
-         */
         if (
             blocked_domains[blocked_domain_count][0] == '\0' ||
             blocked_domains[blocked_domain_count][0] == '#'
@@ -64,11 +52,6 @@ int load_blocked_domains(const char *filename)
 
     return 0;
 }
-
-
-/*
- * Check whether a domain is blocked.
- */
 int is_domain_blocked(const char *domain)
 {
     int i;
