@@ -1,0 +1,4 @@
+# Domains that the proxy should block.
+# One domain per line.
+
+blocked.example.com
