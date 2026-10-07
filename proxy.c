@@ -25,9 +25,6 @@
 #define BACKLOG 20
 
 
-/*
- * Structure passed to each client thread.
- */
 struct ClientInfo
 {
     int client_fd;
@@ -35,9 +32,7 @@ struct ClientInfo
 };
 
 
-/*
- * Send all bytes.
- */
+
 int send_all(
     int socket_fd,
     const char *data,
@@ -66,10 +61,6 @@ int send_all(
     return 0;
 }
 
-
-/*
- * Connect to destination server.
- */
 int connect_to_server(
     const char *host,
     int port)
@@ -116,9 +107,7 @@ int connect_to_server(
         server->h_length
     );
 
-    /*
-     * Set a timeout.
-     */
+   
     struct timeval timeout;
 
     timeout.tv_sec = 5;
@@ -156,10 +145,6 @@ int connect_to_server(
     return server_fd;
 }
 
-
-/*
- * Handle one client.
- */
 void *handle_client(void *argument)
 {
     struct ClientInfo *client;
@@ -179,10 +164,6 @@ void *handle_client(void *argument)
         sizeof(client_ip)
     );
 
-
-    /*
-     * Allocate request buffer.
-     */
     char request[BUFFER_SIZE];
 
     memset(
@@ -191,10 +172,6 @@ void *handle_client(void *argument)
         sizeof(request)
     );
 
-
-    /*
-     * Receive HTTP request.
-     */
     ssize_t received =
         recv(
             client_fd,
@@ -202,7 +179,6 @@ void *handle_client(void *argument)
             sizeof(request) - 1,
             0
         );
-
 
     if (received <= 0)
     {
@@ -215,11 +191,6 @@ void *handle_client(void *argument)
 
 
     request[received] = '\0';
-
-
-    /*
-     * Parse HTTP request.
-     */
     struct HttpRequest req;
 
     int parse_result =
@@ -228,10 +199,6 @@ void *handle_client(void *argument)
             &req
         );
 
-
-    /*
-     * Bad request.
-     */
     if (parse_result == -1)
     {
         send_http_error(
@@ -255,10 +222,6 @@ void *handle_client(void *argument)
         pthread_exit(NULL);
     }
 
-
-    /*
-     * Unsupported HTTP method.
-     */
     if (parse_result == -2)
     {
         send_http_error(
@@ -283,9 +246,6 @@ void *handle_client(void *argument)
     }
 
 
-    /*
-     * Start timer.
-     */
     struct timespec start_time;
 
     clock_gettime(
@@ -293,10 +253,6 @@ void *handle_client(void *argument)
         &start_time
     );
 
-
-    /*
-     * Access control.
-     */
     if (is_domain_blocked(req.host))
     {
         send_http_error(
@@ -320,10 +276,6 @@ void *handle_client(void *argument)
         pthread_exit(NULL);
     }
 
-
-    /*
-     * Create cache filename.
-     */
     char cache_filename[512];
 
     create_cache_filename(
@@ -333,10 +285,6 @@ void *handle_client(void *argument)
         sizeof(cache_filename)
     );
 
-
-    /*
-     * Check cache.
-     */
     if (cache_exists(cache_filename))
     {
         char *cached_data;
@@ -396,12 +344,6 @@ void *handle_client(void *argument)
         }
     }
 
-
-    /*
-     * Cache miss.
-     *
-     * Connect to destination.
-     */
     int server_fd =
         connect_to_server(
             req.host,
@@ -432,10 +374,6 @@ void *handle_client(void *argument)
         pthread_exit(NULL);
     }
 
-
-    /*
-     * Build request for destination.
-     */
     char outgoing_request[BUFFER_SIZE];
 
     snprintf(
@@ -451,10 +389,6 @@ void *handle_client(void *argument)
         req.host
     );
 
-
-    /*
-     * Send request to destination.
-     */
     if (
         send_all(
             server_fd,
@@ -485,14 +419,6 @@ void *handle_client(void *argument)
 
         pthread_exit(NULL);
     }
-
-
-    /*
-     * Receive destination response.
-     *
-     * We store the response in memory so that
-     * it can also be cached.
-     */
     char *response_buffer;
 
     response_buffer =
@@ -550,9 +476,6 @@ void *handle_client(void *argument)
 
         total_received += bytes;
 
-        /*
-         * Send response to client immediately.
-         */
         if (
             send_all(
                 client_fd,
@@ -570,13 +493,6 @@ void *handle_client(void *argument)
 
     close(server_fd);
 
-
-    /*
-     * Cache successful responses.
-     *
-     * For simplicity we cache only responses
-     * that appear to be HTTP 200.
-     */
     if (
         !receive_error &&
         total_received > 0 &&
@@ -594,10 +510,6 @@ void *handle_client(void *argument)
         );
     }
 
-
-    /*
-     * Calculate elapsed time.
-     */
     struct timespec end_time;
 
     clock_gettime(
@@ -644,32 +556,16 @@ void *handle_client(void *argument)
     pthread_exit(NULL);
 }
 
-
-/*
- * Main function.
- */
 int main()
 {
     int server_fd;
 
     struct sockaddr_in server_address;
 
-
-    /*
-     * Ignore SIGPIPE.
-     *
-     * Prevents the program from crashing
-     * when a client disconnects unexpectedly.
-     */
     signal(
         SIGPIPE,
         SIG_IGN
     );
-
-
-    /*
-     * Create required directories.
-     */
     mkdir(
         "cache",
         0755
@@ -680,18 +576,9 @@ int main()
         0755
     );
 
-
-    /*
-     * Load blocked domains.
-     */
     load_blocked_domains(
         "blocked_domains.txt"
     );
-
-
-    /*
-     * Create TCP socket.
-     */
     server_fd =
         socket(
             AF_INET,
@@ -705,11 +592,6 @@ int main()
 
         return 1;
     }
-
-
-    /*
-     * Allow address reuse.
-     */
     int option = 1;
 
     setsockopt(
@@ -719,11 +601,6 @@ int main()
         &option,
         sizeof(option)
     );
-
-
-    /*
-     * Set server address.
-     */
     memset(
         &server_address,
         0,
@@ -739,10 +616,6 @@ int main()
     server_address.sin_port =
         htons(PROXY_PORT);
 
-
-    /*
-     * Bind socket.
-     */
     if (
         bind(
             server_fd,
@@ -758,10 +631,6 @@ int main()
         return 1;
     }
 
-
-    /*
-     * Start listening.
-     */
     if (
         listen(
             server_fd,
@@ -790,10 +659,6 @@ int main()
         CACHE_TTL
     );
 
-
-    /*
-     * Main client loop.
-     */
     while (1)
     {
         struct ClientInfo *client;
@@ -813,9 +678,6 @@ int main()
             sizeof(client->client_address);
 
 
-        /*
-         * Accept client.
-         */
         client->client_fd =
             accept(
                 server_fd,
@@ -832,10 +694,6 @@ int main()
             continue;
         }
 
-
-        /*
-         * Create a thread for this client.
-         */
         pthread_t thread;
 
         if (
@@ -854,10 +712,6 @@ int main()
             continue;
         }
 
-
-        /*
-         * We don't need to wait for the thread.
-         */
         pthread_detach(thread);
     }
 
