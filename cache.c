@@ -4,10 +4,6 @@
 #include <sys/stat.h>
 
 #include "cache.h"
-
-/*
- * Create a simple filename from host + path.
- */
 void create_cache_filename(
     const char *host,
     const char *path,
@@ -24,11 +20,6 @@ void create_cache_filename(
     );
 }
 
-
-/*
- * Check whether a cache file exists
- * and is younger than CACHE_TTL seconds.
- */
 int cache_exists(const char *filename)
 {
     struct stat file_info;
@@ -40,9 +31,7 @@ int cache_exists(const char *filename)
 
     time_t current_time = time(NULL);
 
-    /*
-     * Cache expired.
-     */
+   
     if (difftime(current_time, file_info.st_mtime) > CACHE_TTL)
     {
         return 0;
@@ -51,10 +40,6 @@ int cache_exists(const char *filename)
     return 1;
 }
 
-
-/*
- * Read the cached response.
- */
 int read_cache(
     const char *filename,
     char *buffer,
@@ -77,10 +62,6 @@ int read_cache(
     return (int)bytes_read;
 }
 
-
-/*
- * Write response to cache.
- */
 int write_cache(
     const char *filename,
     const char *data,
