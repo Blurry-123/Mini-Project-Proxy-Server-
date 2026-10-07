@@ -6,10 +6,6 @@
 
 #define LOG_FILE "logs/proxy.log"
 
-/*
- * Mutex prevents multiple threads from
- * writing to the log at the same time.
- */
 pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
